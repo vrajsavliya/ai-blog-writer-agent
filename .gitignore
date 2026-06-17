@@ -44,3 +44,26 @@ firebase_options.dart
 *.pem
 *.p12
 *.jks
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
+# Flutter
+.dart_tool/
+build/
+
+# IDE
+.idea/
+.vscode/
+
+# Keys
+*.key
+*.pem
+*.jks
