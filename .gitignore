@@ -27,3 +27,20 @@ doc/api/
 
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
+# API Keys & Secrets
+*.key
+*.pem
+*.p12
+*.jks
