@@ -52,4 +52,14 @@ class FirestoreService {
   Future<void> deleteArticle(String id) async {
     await _userArticles.doc(id).delete();
   }
+
+  /// Delete all articles for the current user
+  Future<void> deleteAllArticles() async {
+    final querySnapshot = await _userArticles.get();
+    final batch = _db.batch();
+    for (var doc in querySnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
 }

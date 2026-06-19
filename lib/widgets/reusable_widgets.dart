@@ -5,27 +5,27 @@ import '../models/article_model.dart';
 import '../providers/blog_provider.dart';
 
 // ── Color Palette ─────────────────────────────────────────────────────────────
-const Color kBg = Color(0xFF0D0F1A);
-const Color kSurface = Color(0xFF161929);
-const Color kCardBg = Color(0xFF1E2235);
-const Color kBorder = Color(0xFF2A2F4A);
-const Color kAccent = Color(0xFF6C63FF);
-const Color kAccentLight = Color(0xFF9B95FF);
-const Color kGreen = Color(0xFF00E5A0);
-const Color kOrange = Color(0xFFFF8C42);
-const Color kRed = Color(0xFFFF4D6D);
-const Color kTextPrimary = Color(0xFFF0F2FF);
-const Color kTextSecondary = Color(0xFF8892B0);
+const Color kBg = Color(0xFFFFFFFF);
+const Color kSurface = Color(0xFFFAFAFA);
+const Color kCardBg = Color(0xFFF5F5F5);
+const Color kBorder = Color(0xFFE5E7EB);
+const Color kAccent = Color(0xFF111827);
+const Color kAccentLight = Color(0xFF374151);
+const Color kGreen = Color(0xFF22C55E);
+const Color kOrange = Color(0xFFF59E0B);
+const Color kRed = Color(0xFFEF4444);
+const Color kTextPrimary = Color(0xFF111827);
+const Color kTextSecondary = Color(0xFF6B7280);
 
 // ── Gradient Presets ──────────────────────────────────────────────────────────
 const LinearGradient kAccentGradient = LinearGradient(
-  colors: [Color(0xFF6C63FF), Color(0xFF48A9FE)],
+  colors: [Color(0xFF111827), Color(0xFF111827)],
   begin: Alignment.centerLeft,
   end: Alignment.centerRight,
 );
 
 const LinearGradient kHeaderGradient = LinearGradient(
-  colors: [Color(0xFF1A1A3E), Color(0xFF0D0F1A)],
+  colors: [Color(0xFFFFFFFF), Color(0xFFFAFAFA)],
   begin: Alignment.topCenter,
   end: Alignment.bottomCenter,
 );
@@ -94,12 +94,18 @@ class _GradientButtonState extends State<GradientButton>
             boxShadow: widget.onPressed != null
                 ? [
                     BoxShadow(
-                      color: kAccent.withValues(alpha: 0.3),
+                      color: kAccent.withValues(alpha: 0.2),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     )
                   ]
-                : [],
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
           ),
           child: Center(
             child: widget.isLoading
@@ -196,8 +202,9 @@ class StatusBadge extends StatelessWidget {
 class ArticleCard extends StatefulWidget {
   final Article article;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
-  const ArticleCard({super.key, required this.article, this.onTap});
+  const ArticleCard({super.key, required this.article, this.onTap, this.onDelete});
 
   @override
   State<ArticleCard> createState() => _ArticleCardState();
@@ -226,12 +233,18 @@ class _ArticleCardState extends State<ArticleCard> {
             boxShadow: _hovered
                 ? [
                     BoxShadow(
-                      color: kAccent.withValues(alpha: 0.08),
+                      color: kAccent.withValues(alpha: 0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
                     )
                   ]
-                : [],
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,6 +269,22 @@ class _ArticleCardState extends State<ArticleCard> {
                   ),
                   const SizedBox(width: 12),
                   StatusBadge(status: widget.article.status),
+                  if (widget.onDelete != null) ...[
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: widget.onDelete,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: kCardBg,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: kBorder),
+                        ),
+                        child: const Icon(Icons.delete_outline_rounded, color: kRed, size: 16),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 8),
@@ -570,10 +599,12 @@ int pipelineStepIndex(PipelineStep step) {
       return 4;
     case PipelineStep.generatingImages:
       return 5;
-    case PipelineStep.saving:
+    case PipelineStep.optimizingContent:
       return 6;
-    case PipelineStep.done:
+    case PipelineStep.saving:
       return 7;
+    case PipelineStep.done:
+      return 8;
     case PipelineStep.error:
       return -1;
   }

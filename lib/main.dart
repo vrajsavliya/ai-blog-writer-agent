@@ -44,9 +44,9 @@ class BlogAgentApp extends StatelessWidget {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
-                backgroundColor: Color(0xFF0D0F1A),
+                backgroundColor: Color(0xFFFFFFFF),
                 body: Center(
-                  child: CircularProgressIndicator(color: Color(0xFF6C63FF)),
+                  child: CircularProgressIndicator(color: Color(0xFF111827)),
                 ),
               );
             }
@@ -63,31 +63,31 @@ class BlogAgentApp extends StatelessWidget {
   ThemeData _buildTheme() {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0D0F1A),
-      colorScheme: const ColorScheme.dark(
-        primary: Color(0xFF6C63FF),
-        secondary: Color(0xFF48A9FE),
-        surface: Color(0xFF161929),
-        error: Color(0xFFFF4D6D),
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: const Color(0xFFFFFFFF),
+      colorScheme: const ColorScheme.light(
+        primary: Color(0xFF111827),
+        secondary: Color(0xFF374151),
+        surface: Color(0xFFFAFAFA),
+        error: Color(0xFFEF4444),
       ),
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF161929),
+        backgroundColor: Color(0xFFFFFFFF),
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: Color(0xFFF0F2FF)),
+        iconTheme: IconThemeData(color: Color(0xFF111827)),
       ),
       tabBarTheme: const TabBarThemeData(
-        labelColor: Color(0xFF9B95FF),
-        unselectedLabelColor: Color(0xFF8892B0),
-        indicatorColor: Color(0xFF6C63FF),
+        labelColor: Color(0xFF111827),
+        unselectedLabelColor: Color(0xFF6B7280),
+        indicatorColor: Color(0xFF111827),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: Color(0xFF6C63FF),
+        color: Color(0xFF111827),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(0xFF1E2235),
+        backgroundColor: const Color(0xFF111827),
         contentTextStyle:
             GoogleFonts.inter(color: Colors.white, fontSize: 13),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

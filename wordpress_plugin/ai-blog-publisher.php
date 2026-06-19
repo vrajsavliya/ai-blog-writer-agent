@@ -12,6 +12,12 @@ if (!defined('ABSPATH')) {
 
 add_action('rest_api_init', 'ai_blog_register_endpoints');
 
+// Add x-api-key to the allowed CORS headers for Flutter Web compatibility
+add_filter('rest_allowed_cors_headers', function($headers) {
+    $headers[] = 'x-api-key';
+    return $headers;
+});
+
 function ai_blog_register_endpoints() {
     register_rest_route('ai-blog/v1', '/publish', array(
         'methods' => 'POST',

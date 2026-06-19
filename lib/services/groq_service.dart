@@ -99,4 +99,20 @@ class GroqService {
     final text = await _generateResponse(prompt);
     return ImagePackage.fromJson(_parseJson(text) as Map<String, dynamic>);
   }
+
+  /// Step 7: AI Search Optimization — E-E-A-T, AEO, GEO, AISEO, LLMO
+  Future<AiSearchOptimizationData> generateAiSearchOptimization({
+    required String articleTitle,
+    required String primaryKeyword,
+    required String fullArticleMarkdown,
+  }) async {
+    final prompt = Prompts.aiSearchOptimizationPrompt(
+      articleTitle,
+      primaryKeyword,
+      fullArticleMarkdown,
+    );
+    final text = await _generateResponse(prompt);
+    return AiSearchOptimizationData.fromJson(
+        _parseJson(text) as Map<String, dynamic>);
+  }
 }

@@ -36,7 +36,7 @@ class _BlogWriterScreenState extends State<BlogWriterScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Blog Writer Agent',
+          'Content Creator',
           style: GoogleFonts.inter(
               color: kTextPrimary,
               fontSize: 17,
@@ -90,25 +90,45 @@ class _BlogWriterScreenState extends State<BlogWriterScreen> {
   }
 
   List<Widget> _buildStepIndicators(BlogProvider provider) {
-    final currentIndex = pipelineStepIndex(provider.currentStep);
+    int currentIndex;
+    switch (provider.currentStep) {
+      case PipelineStep.idle:
+      case PipelineStep.fetchingTopics:
+      case PipelineStep.evaluatingTopics:
+        currentIndex = 0;
+        break;
+      case PipelineStep.awaitingTopicSelection:
+        currentIndex = 1;
+        break;
+      case PipelineStep.generatingSeo:
+      case PipelineStep.generatingContent:
+      case PipelineStep.generatingMetadata:
+      case PipelineStep.generatingImages:
+      case PipelineStep.optimizingContent:
+      case PipelineStep.saving:
+        currentIndex = 2;
+        break;
+      case PipelineStep.done:
+      case PipelineStep.error:
+        currentIndex = 3;
+        break;
+    }
+
     final isDone = provider.currentStep == PipelineStep.done;
     final isError = provider.currentStep == PipelineStep.error;
 
     final steps = [
-      ('Fetch Trending Topics', 'Tavily Search API → web trends'),
-      ('Evaluate & Score Topics', 'Groq AI → opportunity scoring'),
-      ('SEO Research', 'Groq AI → keywords & meta tags'),
-      ('Generate Blog Content', 'Groq AI → full article + FAQ'),
-      ('Generate Metadata', 'Groq AI → tags, categories, OG'),
-      ('Create Image Prompts', 'Groq AI → featured & supporting'),
-      ('Save to Firestore', 'Cloud Firestore → persist article'),
+      ('Collecting trending topics', 'Market Analysis & Topic Scoring'),
+      ('Select topics', 'Choose the best opportunity'),
+      ('Generating blogs', 'Content Engine & Optimization'),
+      ('Completed', 'Article saved and ready to publish'),
     ];
 
     return steps.asMap().entries.map((entry) {
       final i = entry.key;
       final (title, subtitle) = entry.value;
-      final isActive = currentIndex == i && !isDone;
-      final isStepDone = isDone || currentIndex > i;
+      final isActive = currentIndex == i && !isDone && provider.currentStep != PipelineStep.idle;
+      final isStepDone = isDone || currentIndex > i || (provider.currentStep == PipelineStep.idle && false);
       final isStepError = isError && currentIndex == i;
 
       return StepIndicator(
@@ -134,16 +154,16 @@ class _HeaderCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            kAccent.withValues(alpha: 0.15),
-            kCardBg,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: kCardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: kAccent.withValues(alpha: 0.3)),
+        border: Border.all(color: kBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +176,7 @@ class _HeaderCard extends StatelessWidget {
                   gradient: kAccentGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.psychology_rounded,
+                child: const Icon(Icons.article_rounded,
                     color: Colors.white, size: 22),
               ),
               const SizedBox(width: 14),
@@ -164,13 +184,13 @@ class _HeaderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('7-Step AI Pipeline',
+                    Text('Content Generation Pipeline',
                         style: GoogleFonts.inter(
                             color: kTextPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w700)),
                     Text(
-                      'Trend Discovery → SEO → Content → Save',
+                      'Topics → Select → Generate → Complete',
                       style: GoogleFonts.inter(
                           color: kTextSecondary, fontSize: 11),
                     ),
@@ -592,6 +612,29 @@ class _ActionButtons extends StatelessWidget {
                     ArticlePreviewScreen(article: provider.article!),
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+          GradientButton(
+            label: provider.isPublishing ? 'Publishing...' : 'Publish to WordPress',
+            icon: provider.isPublishing ? null : Icons.cloud_upload_rounded,
+            width: double.infinity,
+            isLoading: provider.isPublishing,
+            gradient: const LinearGradient(
+                colors: [Color(0xFFE44D26), Color(0xFFF16529)]),
+            onPressed: provider.isPublishing ? null : () async {
+              final success = await provider.publishToWordPress();
+              if (success && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Successfully published to WordPress!', style: GoogleFonts.inter(color: Colors.white, fontSize: 13)),
+                    backgroundColor: kGreen.withValues(alpha: 0.9),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    margin: const EdgeInsets.all(16),
+                  ),
+                );
+              }
+            },
           ),
           const SizedBox(height: 12),
           GradientButton(

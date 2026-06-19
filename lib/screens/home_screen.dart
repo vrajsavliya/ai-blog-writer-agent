@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/blog_provider.dart';
 import '../models/article_model.dart';
 import '../widgets/reusable_widgets.dart';
+import '../services/firestore_service.dart';
 import 'blog_writer_screen.dart';
 import 'article_preview_screen.dart';
 
@@ -22,7 +23,7 @@ class HomeScreen extends StatelessWidget {
           // ── Header ────────────────────────────────────────────────────────────
           SliverAppBar(
             expandedHeight: 160,
-            pinned: true,
+            pinned: false,
             backgroundColor: kSurface,
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
@@ -43,23 +44,111 @@ class HomeScreen extends StatelessWidget {
                                 gradient: kAccentGradient,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.auto_awesome,
+                              child: const Icon(Icons.edit_document,
                                   color: Colors.white, size: 20),
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'AI Blog Agent',
+                              'BlogSphere',
                               style: GoogleFonts.inter(
                                 color: kTextPrimary,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
+                            const Spacer(),
+                            PopupMenuButton<String>(
+                              onSelected: (value) async {
+                                if (value == 'logout') {
+                                  await FirebaseAuth.instance.signOut();
+                                } else if (value == 'delete_all') {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      backgroundColor: kCardBg,
+                                      title: Text('Delete All Articles?', style: GoogleFonts.inter(color: kTextPrimary)),
+                                      content: Text('This action cannot be undone. All your generated articles will be permanently deleted.', style: GoogleFonts.inter(color: kTextSecondary)),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: Text('Cancel', style: GoogleFonts.inter(color: kTextSecondary)),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          child: Text('Delete All', style: GoogleFonts.inter(color: kRed)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  
+                                  if (confirm == true) {
+                                    await FirestoreService().deleteAllArticles();
+                                  }
+                                }
+                              },
+                              color: kCardBg,
+                              offset: const Offset(0, 45),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  enabled: false,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Signed in as', style: GoogleFonts.inter(color: kTextSecondary, fontSize: 12)),
+                                      Text(FirebaseAuth.instance.currentUser?.email ?? 'User', style: GoogleFonts.inter(color: kTextPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuDivider(),
+                                PopupMenuItem(
+                                  value: 'delete_all',
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.delete_sweep_rounded, color: kTextPrimary, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text('Delete All Articles',
+                                          style: GoogleFonts.inter(
+                                              color: kTextPrimary,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'logout',
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.logout_rounded, color: kRed, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text('Log Out',
+                                          style: GoogleFonts.inter(
+                                              color: kRed,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              child: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: kCardBg,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: kBorder),
+                                ),
+                                child: const Icon(Icons.person_rounded,
+                                    color: kTextPrimary, size: 18),
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Generated Articles',
+                          'Recent Articles',
                           style: GoogleFonts.inter(
                             color: kTextPrimary,
                             fontSize: 26,
@@ -67,7 +156,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Powered by Groq AI & Tavily Search',
+                          'Professional Content Publishing Platform',
                           style: GoogleFonts.inter(
                               color: kTextSecondary, fontSize: 13),
                         ),
@@ -97,16 +186,14 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     children: [
                       _StatCard(
-                          label: 'Total', value: '${articles.length}',
-                          color: kAccent),
+                          label: 'Total', value: '${articles.length}'),
                       const SizedBox(width: 12),
                       _StatCard(
                           label: 'Published', value: '$published',
-                          color: kGreen),
+                          valueColor: kGreen),
                       const SizedBox(width: 12),
                       _StatCard(
-                          label: 'Saved', value: '$saved',
-                          color: kOrange),
+                          label: 'Saved', value: '$saved'),
                     ],
                   ),
                 );
@@ -158,7 +245,7 @@ class HomeScreen extends StatelessWidget {
                     icon: Icons.edit_note_rounded,
                     title: 'No Articles Yet',
                     subtitle:
-                        'Tap the button below to generate your first AI blog article.',
+                        'Tap the button below to create your first article.',
                   ),
                 );
               }
@@ -175,6 +262,29 @@ class HomeScreen extends StatelessWidget {
                               article: articles[index]),
                         ),
                       ),
+                      onDelete: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: kCardBg,
+                            title: Text('Delete Article?', style: GoogleFonts.inter(color: kTextPrimary)),
+                            content: Text('Are you sure you want to delete this article? This action cannot be undone.', style: GoogleFonts.inter(color: kTextSecondary)),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: Text('Cancel', style: GoogleFonts.inter(color: kTextSecondary)),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: Text('Delete', style: GoogleFonts.inter(color: kRed)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          await FirestoreService().deleteArticle(articles[index].id);
+                        }
+                      },
                     ),
                     childCount: articles.length,
                   ),
@@ -214,7 +324,7 @@ class HomeScreen extends StatelessWidget {
                   const Icon(Icons.add_rounded, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'Generate New Blog',
+                    'Create New Article',
                     style: GoogleFonts.inter(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -234,10 +344,10 @@ class HomeScreen extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
+  final Color valueColor;
 
   const _StatCard(
-      {required this.label, required this.value, required this.color});
+      {required this.label, required this.value, this.valueColor = kTextPrimary});
 
   @override
   Widget build(BuildContext context) {
@@ -245,16 +355,23 @@ class _StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: kCardBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+          border: Border.all(color: kBorder),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            )
+          ],
         ),
         child: Column(
           children: [
             Text(
               value,
               style: GoogleFonts.inter(
-                  color: color,
+                  color: valueColor,
                   fontSize: 22,
                   fontWeight: FontWeight.w800),
             ),

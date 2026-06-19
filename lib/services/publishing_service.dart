@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -28,25 +27,32 @@ class PublishingService {
 
   /// Publish article to WordPress via Custom REST API
   Future<String> publishToWordPress(Article article) async {
-    final response = await _dio.post(
-      '/publish',
-      data: {
-        'title': article.content.title,
-        'content': _markdownToHtml(article.content.fullArticleMarkdown),
-        'status': 'publish',
-        'slug': article.seo.urlSlug,
-        'excerpt': article.seo.metaDescription,
-        'categories': article.metadata.categories,
-        'tags': article.metadata.tags,
-        'meta': {
-          '_yoast_wpseo_title': article.metadata.metaTitle,
-          '_yoast_wpseo_metadesc': article.metadata.metaDescription,
+    try {
+      final response = await _dio.post(
+        '/publish',
+        data: {
+          'title': article.content.title.isEmpty ? article.topic.title : article.content.title,
+          'content': _markdownToHtml(article.content.fullArticleMarkdown),
+          'status': 'publish',
+          'slug': article.seo.urlSlug,
+          'excerpt': article.seo.metaDescription,
+          'categories': article.metadata.categories,
+          'tags': article.metadata.tags,
+          'meta': {
+            '_yoast_wpseo_title': article.metadata.metaTitle,
+            '_yoast_wpseo_metadesc': article.metadata.metaDescription,
+          },
         },
-      },
-    );
+      );
 
-    final postId = response.data['postId']?.toString() ?? '';
-    return postId;
+      final postId = response.data['postId']?.toString() ?? '';
+      return postId;
+    } on DioException catch (e) {
+      print('Dio error publishing to WP: ${e.response?.data ?? e.message}');
+      throw Exception('Failed to publish: ${e.response?.data ?? e.message}');
+    } catch (e) {
+      throw Exception('Failed to publish: $e');
+    }
   }
 
   /// Simple Markdown to HTML conversion for WordPress

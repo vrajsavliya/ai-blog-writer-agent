@@ -57,7 +57,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   gradient: kAccentGradient,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 30),
+                child: const Icon(Icons.edit_document, color: Colors.white, size: 30),
               ),
               const SizedBox(height: 24),
               Text(

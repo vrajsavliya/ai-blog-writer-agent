@@ -57,11 +57,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   gradient: kAccentGradient,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.auto_awesome, color: Colors.white, size: 30),
+                child: const Icon(Icons.edit_document, color: Colors.white, size: 30),
               ),
               const SizedBox(height: 24),
               Text(
-                'Welcome Back',
+                'Welcome Back to BlogSphere',
                 style: GoogleFonts.inter(
                   color: kTextPrimary,
                   fontSize: 28,
@@ -70,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Sign in to continue to AI Blog Agent',
+                'Sign in to continue to BlogSphere',
                 style: GoogleFonts.inter(color: kTextSecondary, fontSize: 14),
               ),
               const SizedBox(height: 40),

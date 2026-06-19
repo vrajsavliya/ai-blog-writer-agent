@@ -6,6 +6,7 @@ import '../models/article_model.dart';
 import '../services/tavily_service.dart';
 import '../services/groq_service.dart';
 import '../services/firestore_service.dart';
+import '../services/publishing_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 enum PipelineStep {
@@ -17,6 +18,7 @@ enum PipelineStep {
   generatingContent,
   generatingMetadata,
   generatingImages,
+  optimizingContent, // NEW — AI Search Optimization layer
   saving,
   done,
   error,
@@ -26,6 +28,7 @@ class BlogProvider extends ChangeNotifier {
   final TavilyService _tavilyService = TavilyService();
   final GroqService _groqService = GroqService();
   final FirestoreService _firestoreService = FirestoreService();
+  final PublishingService _publishingService = PublishingService();
 
   // ── State ────────────────────────────────────────────────────────────────────
   PipelineStep _currentStep = PipelineStep.idle;
@@ -34,6 +37,7 @@ class BlogProvider extends ChangeNotifier {
   Topic? _selectedTopic;
   Article? _article;
   String? _savedArticleId;
+  bool _isPublishing = false;
 
   // ── Getters ──────────────────────────────────────────────────────────────────
   PipelineStep get currentStep => _currentStep;
@@ -42,27 +46,30 @@ class BlogProvider extends ChangeNotifier {
   Topic? get selectedTopic => _selectedTopic;
   Article? get article => _article;
   String? get savedArticleId => _savedArticleId;
+  bool get isPublishing => _isPublishing;
 
   double get progress {
     switch (_currentStep) {
       case PipelineStep.idle:
         return 0.0;
       case PipelineStep.fetchingTopics:
-        return 1 / 7;
+        return 1 / 8;
       case PipelineStep.evaluatingTopics:
-        return 2 / 7;
+        return 2 / 8;
       case PipelineStep.awaitingTopicSelection:
-        return 2 / 7;
+        return 2 / 8;
       case PipelineStep.generatingSeo:
-        return 3 / 7;
+        return 3 / 8;
       case PipelineStep.generatingContent:
-        return 4 / 7;
+        return 4 / 8;
       case PipelineStep.generatingMetadata:
-        return 5 / 7;
+        return 5 / 8;
       case PipelineStep.generatingImages:
-        return 6 / 7;
+        return 6 / 8;
+      case PipelineStep.optimizingContent:
+        return 7 / 8;
       case PipelineStep.saving:
-        return 6.5 / 7;
+        return 7.5 / 8;
       case PipelineStep.done:
         return 1.0;
       case PipelineStep.error:
@@ -84,23 +91,19 @@ class BlogProvider extends ChangeNotifier {
       case PipelineStep.idle:
         return 'Ready to generate';
       case PipelineStep.fetchingTopics:
-        return 'Step 1/7 — Fetching trending topics...';
       case PipelineStep.evaluatingTopics:
-        return 'Step 2/7 — Evaluating & scoring topics...';
+        return 'Step 1/4 — Collecting trending topics...';
       case PipelineStep.awaitingTopicSelection:
-        return 'Topics found! Select a topic to continue.';
+        return 'Step 2/4 — Select a topic to continue.';
       case PipelineStep.generatingSeo:
-        return 'Step 3/7 — Researching SEO keywords...';
       case PipelineStep.generatingContent:
-        return 'Step 4/7 — Writing full blog article...';
       case PipelineStep.generatingMetadata:
-        return 'Step 5/7 — Generating metadata...';
       case PipelineStep.generatingImages:
-        return 'Step 6/7 — Creating image prompts...';
+      case PipelineStep.optimizingContent:
       case PipelineStep.saving:
-        return 'Step 7/7 — Saving to Firestore...';
+        return 'Step 3/4 — Generating blog...';
       case PipelineStep.done:
-        return 'Article generated successfully!';
+        return 'Step 4/4 — Completed!';
       case PipelineStep.error:
         return 'Error: $_errorMessage';
     }
@@ -115,6 +118,7 @@ class BlogProvider extends ChangeNotifier {
     _selectedTopic = null;
     _article = null;
     _savedArticleId = null;
+    _isPublishing = false;
     notifyListeners();
   }
 
@@ -199,7 +203,17 @@ class BlogProvider extends ChangeNotifier {
       final imagePackage =
           await _groqService.generateImagePackage(_selectedTopic!);
 
-      // ── Step 7: Save to Firestore ─────────────────────────────────────────────
+      // ── Step 7: AI Search Optimization ───────────────────────────────────────
+      _setStep(PipelineStep.optimizingContent);
+      final aiOptimization = await _groqService.generateAiSearchOptimization(
+        articleTitle: blogContent.title.isNotEmpty
+            ? blogContent.title
+            : _selectedTopic!.title,
+        primaryKeyword: seoData.primaryKeyword,
+        fullArticleMarkdown: blogContent.fullArticleMarkdown,
+      );
+
+      // ── Step 8: Save to Firestore ─────────────────────────────────────────────
       _setStep(PipelineStep.saving);
       _article = Article(
         id: partialArticle.id,
@@ -208,6 +222,7 @@ class BlogProvider extends ChangeNotifier {
         content: blogContent,
         images: imagePackage,
         metadata: metadata,
+        aiOptimization: aiOptimization,
         status: PublishStatus.saved,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -226,6 +241,23 @@ class BlogProvider extends ChangeNotifier {
   void _setStep(PipelineStep step) {
     _currentStep = step;
     notifyListeners();
+  }
+
+  Future<bool> publishToWordPress() async {
+    if (_article == null) return false;
+    _isPublishing = true;
+    notifyListeners();
+    try {
+      await _publishingService.publishToWordPress(_article!);
+      _isPublishing = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isPublishing = false;
+      _errorMessage = e.toString();
+      _setStep(PipelineStep.error);
+      return false;
+    }
   }
 
   Stream<List<Article>> get articlesStream => _firestoreService.getArticles();
