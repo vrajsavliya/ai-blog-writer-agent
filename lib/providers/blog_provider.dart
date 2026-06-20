@@ -7,6 +7,7 @@ import '../services/tavily_service.dart';
 import '../services/groq_service.dart';
 import '../services/firestore_service.dart';
 import '../services/publishing_service.dart';
+import '../services/flux_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 enum PipelineStep {
@@ -29,6 +30,7 @@ class BlogProvider extends ChangeNotifier {
   final GroqService _groqService = GroqService();
   final FirestoreService _firestoreService = FirestoreService();
   final PublishingService _publishingService = PublishingService();
+  final FluxService _fluxService = FluxService();
 
   // ── State ────────────────────────────────────────────────────────────────────
   PipelineStep _currentStep = PipelineStep.idle;
@@ -198,10 +200,28 @@ class BlogProvider extends ChangeNotifier {
       _setStep(PipelineStep.generatingMetadata);
       final metadata = await _groqService.generateMetadata(partialArticle);
 
-      // ── Step 6: Generate Image Package ───────────────────────────────────────
+      // ── Step 6: Generate Image Package & Actual Images ─────────────────────
       _setStep(PipelineStep.generatingImages);
-      final imagePackage =
+      final rawImagePackage =
           await _groqService.generateImagePackage(_selectedTopic!);
+
+      final featuredImagePath = await _fluxService.generateAndDownloadImage(
+          rawImagePackage.featuredImage.prompt, 'featured');
+          
+      final featuredImage = rawImagePackage.featuredImage.copyWith(
+          localImagePath: featuredImagePath);
+          
+      final supportingImages = <BlogImageInfo>[];
+      for (int i = 0; i < rawImagePackage.supportingImages.length; i++) {
+        final img = rawImagePackage.supportingImages[i];
+        final path = await _fluxService.generateAndDownloadImage(
+            img.prompt, 'supporting_$i');
+        supportingImages.add(img.copyWith(localImagePath: path));
+      }
+      
+      final imagePackage = ImagePackage(
+          featuredImage: featuredImage, 
+          supportingImages: supportingImages);
 
       // ── Step 7: AI Search Optimization ───────────────────────────────────────
       _setStep(PipelineStep.optimizingContent);

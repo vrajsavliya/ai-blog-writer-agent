@@ -98,19 +98,44 @@ class BlogImageInfo {
   final String altText;
   final String caption;
   final String placement;
+  final String? localImagePath;
+  final String? wordpressMediaId;
+  final String? wordpressMediaUrl;
 
   BlogImageInfo({
     required this.prompt,
     required this.altText,
     required this.caption,
     required this.placement,
+    this.localImagePath,
+    this.wordpressMediaId,
+    this.wordpressMediaUrl,
   });
+
+  BlogImageInfo copyWith({
+    String? localImagePath,
+    String? wordpressMediaId,
+    String? wordpressMediaUrl,
+  }) {
+    return BlogImageInfo(
+      prompt: prompt,
+      altText: altText,
+      caption: caption,
+      placement: placement,
+      localImagePath: localImagePath ?? this.localImagePath,
+      wordpressMediaId: wordpressMediaId ?? this.wordpressMediaId,
+      wordpressMediaUrl: wordpressMediaUrl ?? this.wordpressMediaUrl,
+    );
+  }
 
   factory BlogImageInfo.fromJson(Map<String, dynamic> json) => BlogImageInfo(
         prompt: json['prompt'] ?? '',
         altText: json['altText'] ?? '',
         caption: json['caption'] ?? '',
         placement: json['placement'] ?? '',
+        localImagePath: json['localImagePath'],
+        wordpressMediaId: json['wordpressMediaId'],
+        wordpressMediaUrl: json['wordpressMediaUrl'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -118,6 +143,9 @@ class BlogImageInfo {
         'altText': altText,
         'caption': caption,
         'placement': placement,
+        if (localImagePath != null) 'localImagePath': localImagePath,
+        if (wordpressMediaId != null) 'wordpressMediaId': wordpressMediaId,
+        if (wordpressMediaUrl != null) 'wordpressMediaUrl': wordpressMediaUrl,
       };
 }
 

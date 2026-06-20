@@ -1,5 +1,6 @@
 import 'dart:convert';
-
+import 'dart:io';
+import '../utils/download_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -331,35 +332,72 @@ class _ImagesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pkg = article.images;
+    final allImages = [pkg.featuredImage, ...pkg.supportingImages];
+    final generatedImages = allImages.where((img) => img.localImagePath != null && img.localImagePath!.isNotEmpty).toList();
+
     return SingleChildScrollView(
       controller: controller,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _MasterCopyButton(
-            label: 'Copy All Image Prompts',
-            onTap: () {
-              final prompts = [pkg.featuredImage, ...pkg.supportingImages]
-                  .map((img) => img.prompt)
-                  .where((p) => p.isNotEmpty)
-                  .join('\n\n---\n\n');
-              onCopy(prompts.isEmpty ? 'No prompts available' : prompts, 'All Image Prompts');
-            },
-          ),
-          const SizedBox(height: 20),
-          _ImageCard(image: pkg.featuredImage, label: 'FEATURED IMAGE', onCopy: onCopy),
-          const SizedBox(height: 14),
-          ...pkg.supportingImages.asMap().entries.map(
-                (e) => Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: _ImageCard(
-                    image: e.value,
-                    label: 'SUPPORTING IMAGE ${e.key + 1}',
-                    onCopy: onCopy,
-                  ),
-                ),
+          if (generatedImages.isNotEmpty) ...[
+            const _SectionTitle('GENERATED IMAGES'),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 200,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: generatedImages.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 16),
+                itemBuilder: (context, index) {
+                  final img = generatedImages[index];
+                  return AspectRatio(
+                    aspectRatio: 1,
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: double.infinity,
+                            child: img.localImagePath!.startsWith('data:image/')
+                              ? Image.memory(
+                                  base64Decode(img.localImagePath!.split(',').last),
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.file(
+                                  File(img.localImagePath!),
+                                  fit: BoxFit.cover,
+                                ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: InkWell(
+                            onTap: () {
+                              downloadImage(img.localImagePath!, 'blog_image_$index.png');
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.download, color: Colors.white, size: 20),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
+            ),
+            const SizedBox(height: 32),
+          ],
+          
           const SizedBox(height: 40),
         ],
       ),

@@ -104,8 +104,54 @@ function ai_blog_publish_post(WP_REST_Request $request) {
         }
     }
     
+    // Set Featured Image
+    if (isset($params['featured_media']) && is_numeric($params['featured_media'])) {
+        set_post_thumbnail($post_id, intval($params['featured_media']));
+    }
+    
     return rest_ensure_response(array(
         'success' => true,
         'postId' => $post_id
     ));
 }
+
+// ── Media Upload Endpoint ─────────────────────────────────────────────────────
+
+add_action('rest_api_init', 'ai_blog_register_media_endpoint');
+
+function ai_blog_register_media_endpoint() {
+    register_rest_route('ai-blog/v1', '/upload-media', array(
+        'methods' => 'POST',
+        'callback' => 'ai_blog_upload_media',
+        'permission_callback' => 'ai_blog_verify_api_key',
+    ));
+}
+
+function ai_blog_upload_media(WP_REST_Request $request) {
+    require_once(ABSPATH . 'wp-admin/includes/image.php');
+    require_once(ABSPATH . 'wp-admin/includes/file.php');
+    require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+    $file_params = $request->get_file_params();
+
+    if (empty($file_params['file'])) {
+        return new WP_Error('missing_file', 'No file uploaded', array('status' => 400));
+    }
+
+    $file = $file_params['file'];
+    
+    $attachment_id = media_handle_sideload($file, 0);
+
+    if (is_wp_error($attachment_id)) {
+        return new WP_Error('upload_error', $attachment_id->get_error_message(), array('status' => 500));
+    }
+
+    $url = wp_get_attachment_url($attachment_id);
+
+    return rest_ensure_response(array(
+        'success' => true,
+        'mediaId' => $attachment_id,
+        'url' => $url
+    ));
+}
+
